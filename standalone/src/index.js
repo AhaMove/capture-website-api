@@ -42,13 +42,19 @@ async function screenshotOne (req, res) {
     }
 
     const size = parseSizeString(req.query.size || '950,350');
+    const format = req.query.format || 'png';
+    const delay = req.query.delay || 0;
+    const timeout = req.query.timout || 60;
     if (size == null) {
         return res.status(400).send('Invalid size parameter');
     }
 
+    
     try {
-        const screenshotUrl = `https://api.screenshotone.com/take?access_key=${screenshotoneAccessKey}&url=${encodeURIComponent(url)}&full_page=false&viewport_width=${size.width}&viewport_height=${size.height}&device_scale_factor=1&format=jpg&image_quality=80&block_ads=true&block_cookie_banners=true&block_banners_by_heuristics=false&block_trackers=true&delay=0&timeout=60`;
-        const response = await axios.get(screenshotUrl, { responseType: 'stream' });
+        const screenshotUrl = `https://api.screenshotone.com/take?access_key=${screenshotoneAccessKey}&url=${encodeURIComponent(url)}&full_page=false&viewport_width=${size.width}&viewport_height=${size.height}&device_scale_factor=1&format=${format}&image_quality=80&block_ads=true&block_cookie_banners=true&block_banners_by_heuristics=false&block_trackers=true&delay=${delay}&timeout=${timeout}`;
+        console.log({screenshotUrl})
+        const response = await axios.get(screenshotUrl, { responseType: 'stream' });        
+        res.setHeader('Content-Type', `image/{format}`);
         return response.data.pipe(res);
     } catch (error) {
         console.error(error);
