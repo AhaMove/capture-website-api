@@ -176,3 +176,23 @@ export function latestCapture(req, res) {
     res.type('png');
     res.send(latest.capture);
 }
+
+export function parseSizeString(sizeString, throwOnError = false) {
+    if (typeof sizeString !== 'string') {
+        if (throwOnError) {
+            throw new Error('sizeString must be a string');
+        }
+        return undefined;
+    }
+    const [width, height] = sizeString.split(',').map((e) => e.trim());
+    if (!width || !height || Number.isNaN(width) || Number.isNaN(height)) {
+        if (throwOnError) {
+            throw new Error('Invalid size parameter');
+        }
+        return undefined;
+    }
+    return {
+        width: width,
+        height: height
+    };
+}

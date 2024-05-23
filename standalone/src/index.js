@@ -1,7 +1,7 @@
 import express from 'express';
-import {doCaptureWork, latestCapture, latestCapturePage, queue, showResults, allowedRequest} from "./helpers.js";
+import {doCaptureWork, latestCapture, latestCapturePage, queue, showResults, allowedRequest, parseSizeString} from "./helpers.js";
 import {getConcurrency, getMaxQueueLength, getScreenshotOneAccessKey } from "./config.js";
-const axios = require('axios');
+import axios from 'axios';
 
 
 const port = process.env.PORT || 8080;
@@ -11,6 +11,11 @@ async function capture(req, res) {
     if (!allowedRequest(req.query)) {
         res.status(403).send('Go away please');
         return;
+    }
+    const size = parseSizeString(req.query.size);
+    if (size != null) {
+        req.query.width = size.width;
+        req.query.height = size.height;
     }
     if (queue.size >= getMaxQueueLength()) {
         res.status(429).send('Maximum queue size reached, try again later');
@@ -29,22 +34,26 @@ async function capture(req, res) {
     });
 }
 async function screenshotOne (req, res) {
-    let screenhotoneAccessKey = getScreenshotOneAccessKey();
+    const screenshotoneAccessKey = getScreenshotOneAccessKey();
+
+    const url = req.query.url;
+    if (typeof url !== 'string' || url.length === 0) {
+        return res.status(400).send('Missing URL parameter');
+    }
+
+    const size = parseSizeString(req.query.size || '950,350');
+    if (size == null) {
+        return res.status(400).send('Invalid size parameter');
+    }
+
     try {
-        const screenshotUrl = `https://api.screenshotone.com/take?access_key=${screenhotoneAccessKey}&url=${encodeURIComponent(url)}&full_page=false&viewport_width=1920&viewport_height=1080&device_scale_factor=1&format=jpg&image_quality=80&block_ads=true&block_cookie_banners=true&block_banners_by_heuristics=false&block_trackers=true&delay=0&timeout=60`;
-        const response = await axios.get(screenshotUrl, { responseType: 'arraybuffer' });
-        res.setHeader('Content-Type', 'image/jpeg');
-        res.send(response.data);
+        const screenshotUrl = `https://api.screenshotone.com/take?access_key=${screenshotoneAccessKey}&url=${encodeURIComponent(url)}&full_page=false&viewport_width=${size.width}&viewport_height=${size.height}&device_scale_factor=1&format=jpg&image_quality=80&block_ads=true&block_cookie_banners=true&block_banners_by_heuristics=false&block_trackers=true&delay=0&timeout=60`;
+        const response = await axios.get(screenshotUrl, { responseType: 'stream' });
+        return response.data.pipe(res);
     } catch (error) {
         console.error(error);
         res.status(500).send('Error fetching screenshot');
     }
-    axios({ method: 'GET', url: `https://api.screenshotone.com/take?access_key=${screenhotoneAccessKey}&url={}&full_page=false&viewport_width=1920&viewport_height=1080&device_scale_factor=1&format=jpg&image_quality=80&block_ads=true&block_cookie_banners=true&block_banners_by_heuristics=false&block_trackers=true&delay=0&timeout=60` })
-    .then(function (response) {
-        res.status(result.statusCode).type(result.responseType).send(response.buffer);
-    }).catch(function (error) {
-        console.error(error);
-    });
 }
 
 async function screenshot(req, res) {
