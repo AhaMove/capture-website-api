@@ -61,10 +61,8 @@ async function screenshot(req, res) {
         res.status(403).send('Go away please');
         return;
     }
-    if (!req.query.engine || req.query.engine=='pp') return capture(req,res)
+    if (req.query.engine=='pp') return capture(req,res)
     return screenshotOne (req, res)
-    
-    
 }
 
 app.get('/capture', capture);
