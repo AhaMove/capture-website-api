@@ -12,6 +12,7 @@ async function capture(req, res) {
         res.status(403).send('Go away please');
         return;
     }
+    req.query.url = req.query.url.replaceAll("~","&")
     const size = parseSizeString(req.query.size);
     if (size != null) {
         req.query.width = size.width;
@@ -36,14 +37,14 @@ async function capture(req, res) {
 async function screenshotOne (req, res) {
     const screenshotoneAccessKey = getScreenshotOneAccessKey();
 
-    const url = req.query.url;
+    let url = req.query.url;
     if (typeof url !== 'string' || url.length === 0) {
         return res.status(400).send('Missing URL parameter');
     }
-
+    url = url.replaceAll("~","&")
     const size = parseSizeString(req.query.size || '950,350');
     const format = req.query.format || 'png';
-    const delay = req.query.delay || 0;
+    const delay = req.query.delay || 5;
     const timeout = req.query.timout || 60;
     if (size == null) {
         return res.status(400).send('Invalid size parameter');
